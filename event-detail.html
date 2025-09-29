@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Charity Activity Management Platform - Event Details</title>
+    <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav>
+        <div class="container nav-container">
+            <a href="index.html" class="logo">Charity event platform</a>
+            <ul class="nav-menu">
+                <li><a href="index.html">Home Page</a></li>
+                <li><a href="search.html">Search activity</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- 主要内容 -->
+    <div class="container">
+        <section class="event-detail" id="eventDetail">
+            <!-- 详情内容通过JS动态生成 -->
+            <p>加载中...</p>
+        </section>
+    </div>
+
+    <!-- 注册弹窗 -->
+    <div class="modal" id="registerModal">
+        <div class="modal-content">
+            <h3>注册提示</h3>
+            <p>该功能正在开发中，敬请期待！</p>
+            <button class="close-modal" id="closeModal">确定</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { getEventDetail } from './js/api.js';
+
+        // 获取URL中的事件ID
+        function getEventIdFromUrl() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('id');
+        }
+
+        // 渲染事件详情
+        async function renderEventDetail() {
+            const eventId = getEventIdFromUrl();
+            const eventDetail = document.getElementById('eventDetail');
+
+            if (!eventId) {
+                eventDetail.innerHTML = '<p>无效的活动ID</p>';
+                return;
+            }
+
+            try {
+                const event = await getEventDetail(eventId);
+
+                // 格式化日期
+                const formatDate = (dateStr) => {
+                    const date = new Date(dateStr);
+                    return date.toLocaleString('zh-CN', { 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric', 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    });
+                };
+
+                // 计算筹款进度百分比
+                const progressPercent = (event.event_progress / event.event_goal) * 100;
+
+                // 生成详情内容
+                eventDetail.innerHTML = `
+                    <div class="event-header">
+                        <h2>${event.event_name}</h2>
+                        <div class="event-meta-detail">
+                            <p>主办方：${event.org_name}</p>
+                            <p>类别：${event.category_name} | 时间：${formatDate(event.event_date)} | 地点：${event.event_location}</p>
+                            <p>门票价格：¥${event.ticket_price.toFixed(2)}</p>
+                        </div>
+                    </div>
+
+                    <div class="event-description">
+                        <h3>活动介绍</h3>
+                        <p>${event.event_desc}</p>
+                        <h3>主办方介绍</h3>
+                        <p>${event.org_mission}</p>
+                        <p><strong>联系主办方：</strong>${event.org_contact} | ${event.org_email}</p>
+                    </div>
+
+                    <div class="event-goal">
+                        <h3>筹款目标与进度</h3>
+                        <p>目标金额：¥${event.event_goal.toFixed(2)}</p>
+                        <p>已筹金额：¥${event.event_progress.toFixed(2)}</p>
+                        <div class="goal-progress">
+                            <div class="progress-bar" style="width: ${progressPercent}%"></div>
+                        </div>
+                        <p>进度：${progressPercent.toFixed(1)}%</p>
+                    </div>
+
+                    <button class="register-btn" id="registerBtn">立即注册</button>
+                `;
+
+                // 绑定注册按钮事件
+                document.getElementById('registerBtn').addEventListener('click', () => {
+                    document.getElementById('registerModal').style.display = 'flex';
+                });
+
+            } catch (error) {
+                eventDetail.innerHTML = `<p>加载失败：${error.message}</p>`;
+            }
+        }
+
+        // 页面加载时渲染
+        renderEventDetail();
+
+        // 关闭弹窗
+        document.getElementById('closeModal').addEventListener('click', () => {
+            document.getElementById('registerModal').style.display = 'none';
+        });
+
+        // 点击弹窗外部关闭
+        window.addEventListener('click', (e) => {
+            const modal = document.getElementById('registerModal');
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

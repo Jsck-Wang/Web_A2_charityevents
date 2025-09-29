@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Charity event management platform - Search activity</title>
+    <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav>
+        <div class="container nav-container">
+            <a href="index.html" class="logo">Charity event platform</a>
+            <ul class="nav-menu">
+                <li><a href="index.html">Home Page</a></li>
+                <li><a href="search.html">Search activity</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- 主要内容 -->
+    <div class="container">
+        <!-- 搜索表单 -->
+        <section class="search-form">
+            <h2>搜索慈善活动</h2>
+            <form id="searchForm">
+                <div class="form-group">
+                    <label for="eventDate">Event Date (optional)</label>
+                    <input type="date" id="eventDate" name="eventDate">
+                </div>
+                <div class="form-group">
+                    <label for="eventLocation">Event location (optional)</label>
+                    <input type="text" id="eventLocation" name="eventLocation" placeholder="输入地点关键词">
+                </div>
+                <div class="form-group">
+                    <label for="eventCategory">Activity category (optional)</label>
+                    <select id="eventCategory" name="eventCategory">
+                        <option value="">全部类别</option>
+                        <!-- 类别选项通过JS动态生成 -->
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Search</button>
+                    <button type="button" class="btn btn-reset" id="resetBtn">Clear the filter</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- 搜索结果 -->
+        <section>
+            <h2>Search results</h2>
+            <div class="events-list" id="searchResults">
+                <p>Please enter the filter conditions and click Search</p>
+            </div>
+        </section>
+    </div>
+
+    <script type="module">
+        import { getCategories, searchEvents } from './js/api.js';
+
+        // 加载类别选项
+        async function loadCategories() {
+            const categorySelect = document.getElementById('eventCategory');
+            try {
+                const categories = await getCategories();
+                categories.forEach(category => {
+                    const option = document.createElement('option');
+                    option.value = category.category_id;
+                    option.textContent = category.category_name;
+                    categorySelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Failed to load the category：', error);
+                categorySelect.innerHTML += '<option value="">Category loading failed</option>';
+            }
+        }
+
+        // 渲染搜索结果
+        async function renderSearchResults(filters) {
+            const searchResults = document.getElementById('searchResults');
+            searchResults.innerHTML = 'Searching...';
+            try {
+                const events = await searchEvents(filters);
+                if (events.length === 0) {
+                    searchResults.innerHTML = '<p>No matching event was found</p>';
+                    return;
+                }
+
+                // 格式化日期
+                const formatDate = (dateStr) => {
+                    const date = new Date(dateStr);
+                    return date.toLocaleString('zh-CN', { 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric', 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    });
+                };
+
+                // 生成结果卡片
+                searchResults.innerHTML = events.map(event => `
+                    <div class="event-card">
+                        <h3>${event.event_name}</h3>
+                        <div class="event-meta">
+                            <p>类别：${event.category_name}</p>
+                            <p>时间：${formatDate(event.event_date)}</p>
+                            <p>地点：${event.event_location}</p>
+                        </div>
+                        <p class="ticket-price">Ticket price：¥${event.ticket_price.toFixed(2)}</p>
+                        <p>筹款进度：¥${event.event_progress.toFixed(2)}/${event.event_goal.toFixed(2)}</p>
+                        <a href="event-detail.html?id=${event.event_id}">For more details</a>
+                    </div>
+                `).join('');
+            } catch (error) {
+                searchResults.innerHTML = `<p>Fail to Searching：${error.message}</p>`;
+            }
+        }
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            loadCategories();
+
+            // 搜索表单提交
+            const searchForm = document.getElementById('searchForm');
+            searchForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const filters = {
+                    date: document.getElementById('eventDate').value,
+                    location: document.getElementById('eventLocation').value,
+                    categoryId: document.getElementById('eventCategory').value
+                };
+                renderSearchResults(filters);
+            });
+
+            // 清除筛选
+            const resetBtn = document.getElementById('resetBtn');
+            resetBtn.addEventListener('click', () => {
+                searchForm.reset();
+                document.getElementById('searchResults').innerHTML = 'Please enter the filter conditions and click Search';
+            });
+        });
+    </script>
+</body>
+</html>

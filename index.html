@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Charity Activity Management Platform - Home Page</title>
+    <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav>
+        <div class="container nav-container">
+            <a href="index.html" class="logo">Charity event platform</a>
+            <ul class="nav-menu">
+                <li><a href="index.html">Home Page</a></li>
+                <li><a href="search.html">Search activity</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main content -->
+    <div class="container">
+        <!-- Information on charitable organizations -->
+        <section class="org-info">
+            <h2>About Us</h2>
+            <p>This platform is dedicated to connecting charitable organizations with caring individuals, integrating various resources for charitable activities, and making public welfare actions more transparent and convenient. We have gathered a variety of activities within the city, such as charity banquets, charity runs, and silent auctions. Each event aims to raise funds and gain attention for specific public welfare causes. We look forward to your participation and support!</p>
+            <p><strong>Contact us：</strong>Love Hotline 13800138001 | Email charity@xwang97.org</p>
+        </section>
+
+        <!-- List of upcoming events -->
+        <section>
+            <h2>The upcoming charity event</h2>
+            <div class="events-list" id="eventsList">
+                <!-- 活动卡片将通过JS动态生成 -->
+                <p>Loading...</p>
+            </div>
+        </section>
+    </div>
+
+    <script type="module">
+        import { getUpcomingEvents } from './js/api.js';
+
+        // 渲染活动列表
+        async function renderUpcomingEvents() {
+            const eventsList = document.getElementById('eventsList');
+            try {
+                const events = await getUpcomingEvents();
+                if (events.length === 0) {
+                    eventsList.innerHTML = '<p>There are no upcoming events for the time being</p>';
+                    return;
+                }
+
+                // 格式化日期
+                const formatDate = (dateStr) => {
+                    const date = new Date(dateStr);
+                    return date.toLocaleString('zh-CN', { 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric', 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    });
+                };
+
+                // 生成活动卡片
+                eventsList.innerHTML = events.map(event => `
+                    <div class="event-card">
+                        <h3>${event.event_name}</h3>
+                        <div class="event-meta">
+                            <p>Category：${event.category_name}</p>
+                            <p>Time：${formatDate(event.event_date)}</p>
+                            <p>Place：${event.event_location}</p>
+                        </div>
+                        <p class="ticket-price">Ticket price：¥${event.ticket_price.toFixed(2)}</p>
+                        <p>Fundraising progress：¥${event.event_progress.toFixed(2)}/${event.event_goal.toFixed(2)}</p>
+                        <a href="event-detail.html?id=${event.event_id}">For more details</a>
+                    </div>
+                `).join('');
+            } catch (error) {
+                eventsList.innerHTML = `<p>Loading failed：${error.message}</p>`;
+            }
+        }
+
+        // 页面加载时渲染
+        renderUpcomingEvents();
+    </script>
+</body>
+</html>
